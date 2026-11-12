@@ -1,6 +1,6 @@
 name: Build Box
 on:
-  workflow_dispatch: # 支持手动点击运行（重点！）
+  workflow_dispatch: # 手动触发
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -8,13 +8,13 @@ jobs:
       - name: 拉取源码
         uses: actions/checkout@v4
 
-      - name: 设置JDK17（takagen99的Box必须JDK17，解决JVM-target报错）
+      - name: 设置JDK17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 缓存Gradle依赖，加速下次编译
+      - name: 缓存Gradle依赖
         uses: actions/cache@v4
         with:
           path: |
@@ -22,12 +22,32 @@ jobs:
             ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
 
-      - name: 阿里云Maven镜像替换（解决国内依赖拉取超时）
+      - name: 写入全局阿里云镜像（init.gradle）
         run: |
-          sed -i 's/mavenCentral()/maven { url "https:\/\/maven.aliyun.com\/repository\/public" }\nmavenCentral()/g' settings.gradle.kts
-          sed -i 's/google()/maven { url "https:\/\/maven.aliyun.com\/repository\/google" }\ngoogle()/g' settings.gradle.kts
+          mkdir -p ~/.gradle
+          cat > ~/.gradle/init.gradle <<'EOF'
+allprojects {
+    repositories {
+        maven { url 'https://maven.aliyun.com/repository/public' }
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+        mavenCentral()
+        google()
+    }
+    buildscript {
+        repositories {
+            maven { url 'https://maven.aliyun.com/repository/public' }
+            maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+        }
+    }
+}
+EOF
 
-      - name: 编译 arm64GenericRelease（TV盒子版本）
+      - name: 自动注入 kotlin jvmTarget = 1.8（方案B）
+        run: |
+          sed -i '/android {/a \ \ kotlinOptions {\n\ \ \ \ jvmTarget = "1.8"\n\ \ }' app/build.gradle.kts
+
+      - name: 编译 arm64GenericRelease（TV盒子版）
         run: ./gradlew assembleArm64GenericRelease
 
       - name: 上传编译产物APK
