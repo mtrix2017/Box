@@ -22,10 +22,7 @@ jobs:
             ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
 
-      - name: Fix jvmTarget
-        run: sed -i '/android {/a kotlinOptions { jvmTarget = "1.8" }' app/build.gradle.kts
-
-      - name: Build arm64 TV release
+      - name: Build arm64GenericRelease
         run: ./gradlew assembleArm64GenericRelease
 
       - name: Upload APK
