@@ -14,9 +14,9 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # 换掉之前坏掉的 android-actions/setup-android@v3
+      # ✅ 正确地址 android-actions/setup-android@v4，不是 actions/setup-android
       - name: Setup Android SDK
-        uses: actions/setup-android@v0.1.0
+        uses: android-actions/setup-android@v4
 
       - name: Accept SDK Licenses
         run: yes | sdkmanager --licenses
